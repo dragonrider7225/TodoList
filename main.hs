@@ -1,9 +1,15 @@
+import Control.Monad (forever)
 import IOCmd
+import TodoData
+import Utils
 
 readTasks = do
     files <- getFiles
-    taskStrs <- sequence . map readFile $ files
-    return taskStrs -- TODO: read Task data from taskStrs
+    sequence . map readTaskFile $ files
+      where
+        readTaskFile filename = do
+            cont <- readFile filename
+            return (filename, readTaskLines cont)
 
 main = do
     tasks <- readTasks

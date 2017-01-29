@@ -1,6 +1,5 @@
-module TodoData (Task) where
-import Text.ParserCombinators.Parsec
-import Text.Parsec.Char
+module TodoData (Task, readTaskLines, showTaskLines) where
+import qualified Data.Text as DT
 
 --{- Testing values
 t = Task "Test Task" 120 1 $ Days True True True True True False False
@@ -54,3 +53,10 @@ instance Read Task where
         (maxRep, afterMax) = readMax afterName
         (rep, afterRep) = readRep afterMax
         (reps, afterReps) = readReps afterRep
+
+showTaskLines :: [Task] -> String
+showTaskLines [] = "\n"
+showTaskLines tasks = foldl1 ((++) . (++"\n")) $ map show tasks
+
+readTaskLines :: String -> [Task]
+readTaskLines = map (read . DT.unpack) . DT.splitOn (DT.pack "\n") . DT.pack
