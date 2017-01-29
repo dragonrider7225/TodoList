@@ -1,5 +1,10 @@
 module TodoData (Task) where
 import Text.ParserCombinators.Parsec
+import Text.Parsec.Char
+
+--{- Testing values
+t = Task "Test Task" 120 1 $ Days True True True True True False False
+---}
 
 data Days = Days { sun :: Bool
                  , mon :: Bool
@@ -13,39 +18,39 @@ data Days = Days { sun :: Bool
 instance Show Days where
     show d = map (head . show . fromEnum . ($ d)) [sun,mon,tue,wed,thu,fri,sat]
 
+instance Read Days where
+    readsPrec _ str = [(result, rest)]
+      where
+        su:mo:tu:we:th:fr:sa:[] = map (toEnum . read . (:[]) :: Char -> Bool) $ take 7 str
+        result = Days su mo tu we th fr sa
+        rest = drop 7 str
+
 data Task = Task { name :: String
+                 , maxRep :: Int
                  , repNum :: Int
                  , reps :: Days
                  }
 
 instance Show Task where
-    show t = (name t) ++ " (" ++ (show $ repNum t) ++ ") " ++ (show $ reps t)
+    show t = (name t) ++ " (" ++ (show $ maxRep t) ++ ") " ++ (show $ repNum t) ++ (' ':(show $ reps t))
 
-taskP :: Parser Task
-taskP = do
-    name <- taskNameP
-    num <- repNumP
-    reps <- space >> daysP
-    return $ Task name num reps
-
-taskNameP :: Parser String
-taskNameP = do
-    nameSp <- many $ noneOf "("
-    return $ init nameSp
-
-repNumP :: Parser Int
-repNumP = do
-    char '('
-    numStr <- many (oneOf "0123456789")
-    char ')'
-    return (read numStr :: Int)
-
--- A Days object consists of seven digits, either '0' or '1'.
-daysP :: Parser Days
-daysP = do
-    daysStr <- sequence . take 7 . repeat $ char '0' <|> char '1'
-    let [su, mo, tu, we, th, fr, sa] = map (toEnum . read . (:[]) :: Char -> Bool) daysStr
-    return $ Days su mo tu we th fr sa
-
-testParser :: String -> Either ParseError Task
-testParser = parse taskP "(unknown)"
+instance Read Task where
+    readsPrec _ str = [(Task name (read maxRep :: Int) (read rep :: Int) (read reps :: Days), afterReps)]
+      where
+        readName [] = ([], [])
+        readName [x] = ([x], [])
+        readName (x:(y:xs)) = if y == '(' && x /= '\\' then ([], xs) else (x:result, rest)
+          where (result, rest) = readName (y:xs)
+        readMax [] = ([], [])
+        readMax [x] = if x == ')' then ([], []) else ([x], [])
+        readMax (x:(y:xs)) = if x == ')' then ([],xs) else (x:result, rest)
+          where (result, rest) = readMax (y:xs)
+        readRep [] = ([], [])
+        readRep [x] = ([x], [])
+        readRep (x:(y:xs)) = if y == ' ' then ([x],xs) else (x:result,rest)
+          where (result, rest) = readRep (y:xs)
+        readReps xs = (take 7 xs, drop 7 xs)
+        (name, afterName) = readName str
+        (maxRep, afterMax) = readMax afterName
+        (rep, afterRep) = readRep afterMax
+        (reps, afterReps) = readReps afterRep
