@@ -1,5 +1,6 @@
 module IOCmd (getFiles) where
-import System.Directory (listDirectory)
+
+import System.Directory (listDirectory, doesDirectoryExist)
 import IOAll
 import Utils
 
@@ -8,4 +9,9 @@ getFiles = do
     filename <- getLine
     if filename == ""
     then return []
-    else isDirectory filename >>= \isDir -> getFiles >>= if isDir then addContents filename else return . (filename:)
+    else do
+        dirExists <- doesDirectoryExist filename
+        files <- getFiles
+        if dirExists
+        then addContents filename files
+        else return $ filename:files

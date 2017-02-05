@@ -1,7 +1,7 @@
 module TodoData (Task, readTaskLines, showTaskLines) where
 import qualified Data.Text as DT
 
---{- Testing values
+{- Testing values
 t = Task "Test Task" 120 1 $ Days True True True True True False False
 ---}
 
