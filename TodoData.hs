@@ -1,5 +1,8 @@
-module TodoData (Task, readTaskLines, showTaskLines) where
+module TodoData (Days(..), Task(..), noDays, allDays, addSun, addMon,
+                 addTue, addWed, addThu, addFri, addSat, readTaskLines,
+                 showTaskLines) where
 import qualified Data.Text as DT
+import Numeric.Natural
 
 {- Testing values
 t = Task "Test Task" 120 1 $ Days True True True True True False False
@@ -14,6 +17,33 @@ data Days = Days { sun :: Bool
                  , sat :: Bool
                  }
 
+noDays :: Days
+noDays = Days False False False False False False False
+
+allDays :: Days
+allDays = Days True True True True True True True
+
+addSun :: Days -> Days
+addSun days = Days True (mon days) (tue days) (wed days) (thu days) (fri days) (sat days)
+
+addMon :: Days -> Days
+addMon days = Days (sun days) True (tue days) (wed days) (thu days) (fri days) (sat days)
+
+addTue :: Days -> Days
+addTue days = Days (sun days) (mon days) True (wed days) (thu days) (fri days) (sat days)
+
+addWed :: Days -> Days
+addWed days = Days (sun days) (mon days) (tue days) True (thu days) (fri days) (sat days)
+
+addThu :: Days -> Days
+addThu days = Days (sun days) (mon days) (tue days) (wed days) True (fri days) (sat days)
+
+addFri :: Days -> Days
+addFri days = Days (sun days) (mon days) (tue days) (wed days) (thu days) True (sat days)
+
+addSat :: Days -> Days
+addSat days = Days (sun days) (mon days) (tue days) (wed days) (thu days) (fri days) True
+
 instance Show Days where
     show d = map (head . show . fromEnum . ($ d)) [sun,mon,tue,wed,thu,fri,sat]
 
@@ -25,8 +55,8 @@ instance Read Days where
         rest = drop 7 str
 
 data Task = Task { name :: String
-                 , maxRep :: Int
-                 , repNum :: Int
+                 , maxRep :: Natural
+                 , repNum :: Natural
                  , reps :: Days
                  }
 
@@ -34,7 +64,7 @@ instance Show Task where
     show t = (name t) ++ " (" ++ (show $ maxRep t) ++ ") " ++ (show $ repNum t) ++ (' ':(show $ reps t))
 
 instance Read Task where
-    readsPrec _ str = [(Task name (read maxRep :: Int) (read rep :: Int) (read reps :: Days), afterReps)]
+    readsPrec _ str = [(Task name (read maxRep :: Natural) (read rep :: Natural) (read reps :: Days), afterReps)]
       where
         readName [] = ([], [])
         readName [x] = ([x], [])
@@ -59,4 +89,6 @@ showTaskLines [] = "\n"
 showTaskLines tasks = foldl1 ((++) . (++"\n")) $ map show tasks
 
 readTaskLines :: String -> [Task]
-readTaskLines = map (read . DT.unpack) . DT.splitOn (DT.pack "\n") . DT.pack
+readTaskLines "" = []
+readTaskLines "\n" = []
+readTaskLines text = map (read . DT.unpack) . DT.splitOn (DT.pack "\n") . DT.pack $ text
