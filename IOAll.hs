@@ -52,7 +52,7 @@ addContents dir filenames = do
 addTask :: Map FilePath [Task] -> IO (Map FilePath [Task])
 addTask tasks = do
     (fp, task) <- getNewTask
-    return $ Map.insertWithKey (\_ -> (:) . head) fp [task] tasks
+    return $ Map.insertWith ((:) . head) fp [task] tasks
 
 readTaskFile :: FilePath -> IO (FilePath, [Task])
 readTaskFile filename = do
