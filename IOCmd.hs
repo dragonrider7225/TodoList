@@ -1,4 +1,4 @@
-module IODiscrete (getFiles, getNewTask) where
+module IODiscrete (getFiles, getNewTask, isGui) where
 import Data.Char (toLower)
 import Data.List (stripPrefix)
 import Numeric.Natural
@@ -7,6 +7,9 @@ import System.IO
 import System.IO.Error
 import TodoData (Days(..), Task(..), noDays)
 import Utils
+
+isGui :: Bool
+isGui = False
 
 getFiles :: IO [FilePath]
 getFiles = do

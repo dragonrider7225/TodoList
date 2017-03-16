@@ -1,15 +1,33 @@
-module IODiscrete (getFiles, getNewTask) where
+module IODiscrete (getFiles, getNewTask, isGui) where
+
 import Data.Char (toLower)
 import Data.List (stripPrefix)
+
+import qualified Graphics.UI.Threepenny as UI
+import Graphics.UI.Threepenny.Core
+
 import Numeric.Natural
+
 import System.Directory (doesDirectoryExist)
 import System.IO
 import System.IO.Error
+
 import TodoData (Days(..), Task(..), noDays)
+
 import Utils
 
+isGui :: Bool
+isGui = True
+
+setup :: Window -> UI ()
+setup window = do
+    return window # set UI.title "Todo List"
+    button <- set UI.text "Add task" UI.button
+    getBody window #+ [element button, UI.div]
+    on UI.click button 
+
 getFiles :: IO [FilePath]
-getFiles = putStr "TODO: Implement getFiles in GUI mode" {-do
+getFiles = putStr "TODO: Implement getFiles in GUI mode" >> return [] {-do
     putStr "Enter file or folder name: "
     filename <- getLine
     if filename == ""
@@ -22,7 +40,7 @@ getFiles = putStr "TODO: Implement getFiles in GUI mode" {-do
                   else filename):files -}
 
 getNewTask :: IO (FilePath, Task)
-getNewTask = putStr "TODO: Implement getNewTask for GUI mode" {-do
+getNewTask = putStr "TODO: Implement getNewTask for GUI mode" >> return undefined {-do
     name <- prompt "Enter task name: "
     maxRep <- promptNatural "Enter number of repeats (0 to repeat forever): "
     repNum <- (if maxRep > 0
