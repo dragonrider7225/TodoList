@@ -1,14 +1,21 @@
 module IOAll (readTaskFile, readTasks, writeTasks) where
+
 import Control.Monad (filterM)
+
 import Data.Map (Map)
 import qualified Data.Map as Map
+
 import IODiscrete
+
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
 import System.IO
 import System.IO.Error
+
 import TodoData (Task(..), readTaskLines, showTaskLines)
+
 import Utils
 
+-- |'addNewTask' @m@ retrieves a new and inserts it into the map m.
 addNewTask :: Map FilePath [Task] -> IO (Map FilePath [Task])
 addNewTask tasks = do
     (fp, task) <- getNewTask

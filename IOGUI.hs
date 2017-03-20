@@ -23,8 +23,17 @@ setup :: Window -> UI ()
 setup window = do
     return window # set UI.title "Todo List"
     button <- set UI.text "Add task" UI.button
-    getBody window #+ [element button, UI.div]
-    on UI.click button 
+    getBody window #+ [element button, set (UI.attr "id") "tasks" UI.div, element button]
+    on UI.click button $ \_ -> getNewTask >>= (\(f, t) -> insertTask f t)
+
+insertTask :: FilePath -> Task -> UI ()
+insertTask f t = do
+    w <- askWindow
+    tasksEl <- getElementById w 
+    Just tasks <- getElementById w "tasks"
+    liftIO $ print tasks
+      where
+        dateStr (t {})
 
 getFiles :: IO [FilePath]
 getFiles = putStr "TODO: Implement getFiles in GUI mode" >> return [] {-do

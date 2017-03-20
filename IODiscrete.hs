@@ -1,17 +1,24 @@
-module IODiscrete (getFiles, getNewTask) where
+module IODiscrete (getFiles, getNewTask, isGui) where
+
 import Data.Char (toLower)
 import Data.List (stripPrefix)
+
 import Numeric.Natural
+
 import System.Directory (doesDirectoryExist)
 import System.IO
 import System.IO.Error
+
 import TodoData (Days(..), Task(..), noDays)
+
 import Utils
+
+isGui :: Bool
+isGui = False
 
 getFiles :: IO [FilePath]
 getFiles = do
-    putStr "Enter file or folder name: "
-    filename <- getLine
+    filename <- prompt "Enter file or folder name: "
     if filename == ""
     then return []
     else do
@@ -36,8 +43,6 @@ getNewTask = do
             (\fp -> return $ if fp == "" then "tasks.lst" else fp))
     return $ (fp, Task name maxRep repNum reps)
       where
-        prompt :: String -> IO String
-        prompt p = putStr p >> getLine
         days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
         readRepDays s = let [su, mo, tu, we, th, fr, sa] = checkConts days . map toLower $ s
                         in Days su mo tu we th fr sa
