@@ -1,8 +1,12 @@
 module TodoData (Days(..), noDays, allDays, addSun, addMon, addTue, addWed,
                  addThu, addFri, addSat,
+                 Datetime, mkDate, mkDatetime,
                  Task(..), readTaskLines, showTaskLines) where
 import qualified Data.Text as DT
+
 import Numeric.Natural
+
+import Utils
 
 {- Testing values
 t = Task "Test Task" 120 1 $ Days True True True True True False False
@@ -54,55 +58,64 @@ instance Read Days where
         result = Days su mo tu we th fr sa
         rest = drop 7 str
 
-data Datetime = Datetime { year :: Int
-                         , month :: Int
-                         , day :: Int
-                         , hour :: Maybe Int
-                         , minute :: Maybe Int
-                         }
+data Datetime = Datetime { year :: Natural
+                         , month :: Natural
+                         , day :: Natural
+                         , hour :: Natural
+                         , minute :: Natural
+                         } deriving (Eq)
+
+mkDatetime :: Natural -> Natural -> Natural -> Natural -> Natural -> Datetime
+mkDatetime yr mnt dy hr min = if min >= 60
+                              then fixMin
+                              else if hr >= 24
+                                   then fixHr
+                                   else if mnt > 12
+                                        then fixMnt
+                                        else if dy > getDays yr mnt
+                                             then fixDay
+                                             else genDatetime
+  where
+    monthNums = cycle [31, 30] :: [Natural]
+    isLeapyear yr = mod yr 400 == 0 || mod yr 100 /= 0 && mod yr 4 == 0
+    getDays yr mnt = cycle (31:(if isLeapyear yr then 29 else 28):(take 5 monthNums ++ take 5 monthNums)) !! (fromIntegral mnt)
+    fixMin = mkDatetime yr mnt dy (hr + div min 60) (mod min 60)
+    fixHr = mkDatetime yr mnt (dy + div hr 24) (mod hr 24) min
+    fixDay = mkDatetime yr (mnt + 1) (dy - getDays yr mnt) hr min
+    fixMnt = mkDatetime (yr + 1) (mnt - 12) dy hr min
+    genDatetime = Datetime yr mnt dy hr min
+
+mkDate = curry . curry $ (flip . (flip . uncurry . uncurry) mkDatetime) 0 0
 
 instance Show Datetime where
-    show dt = ymd ++ hm
+    show = concat . map (leftPad . show) . zipWith ($) fields . repeat
       where
-        leftPad n = if length n > 1 then n else '0':n
-        ymd = concat . map (leftPad . show) . zipWith ($) [year, month, day] $ repeat dt
-        mToS Nothing = ""
-        mToS (Just x) = show x
-        hm = concat . map (leftPad . mToS) . zipWith ($) [hour, minute] $ repeat dt
-
-instance Read Date where
-    readsPrec _ str = [(result, rest)]
-      where
-        takeAndDropWhile p xs = (takeWhile p xs, dropWhile p xs)
-        (d, rest) = takeAndDrop 2 $ reverse str
-        (m, rest) = takeAndDrop 2 rest
-        y = takeWhile (/= ' ') rest
-
-instance Show Time where
-    show = concat . map (leftPad . show) . zipWith ($) [hour, minute] . repeat
-      where
+        fields = [year, month, day, hour, minute]
         leftPad n = if length n > 1 then n else '0':n
 
-instance Read Time where
+instance Read Datetime where
     readsPrec _ str = [(result, rest)]
       where
-        h = read $ take 2 str :: Int
-        m = read . take 2 $ drop 2 str :: Int
-        result = mkTime h m
-        rest = drop 4 str
+        fixFst (start, rest) = (read $ reverse start :: Natural, rest)
+        (dt, rest) = span (/= ' ') str
+        (min, afterMin) = fixFst $ splitAt 2 dt
+        (hr, afterHour) = fixFst $ splitAt 2 afterMin
+        (day, afterDay) = fixFst $ splitAt 2 afterHour
+        (mnt, yr) = fixFst $ splitAt 2 afterDay
+        result = mkDatetime (read $ reverse yr) mnt day hr min
 
 data Task = Task { name :: String
                  , maxRep :: Natural
                  , repNum :: Natural
                  , reps :: Days
-                 , date :: DateTime
+                 , date :: Datetime
                  } deriving (Eq)
 
 instance Show Task where
     show t = (name t) ++ " (" ++ (show $ maxRep t) ++ ") " ++ (show $ repNum t) ++ (' ':(show $ date t)) ++ (' ':(show $ reps t))
 
 instance Read Task where
-    readsPrec _ str = [(Task name (read maxRep :: Natural) (read rep :: Natural) (read reps :: Days), afterReps)]
+    readsPrec _ str = [(Task name (read maxRep) (read rep) (read datetime) (read reps), afterReps)]
       where
         readName [] = ([], [])
         readName [x] = ([x], [])
