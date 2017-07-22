@@ -8,6 +8,8 @@ import Numeric.Natural
 
 import Utils
 
+default(Natural)
+
 {- Testing values
 t = Task "Test Task" 120 1 $ Days True True True True True False False
 ---}
@@ -85,6 +87,7 @@ mkDatetime yr mnt dy hr min = if min >= 60
     fixMnt = mkDatetime (yr + 1) (mnt - 12) dy hr min
     genDatetime = Datetime yr mnt dy hr min
 
+mkDate :: Natural -> Natural -> Natural -> Datetime
 mkDate = curry . curry $ (flip . (flip . uncurry . uncurry) mkDatetime) 0 0
 
 instance Show Datetime where
@@ -115,25 +118,22 @@ instance Show Task where
     show t = (name t) ++ " (" ++ (show $ maxRep t) ++ ") " ++ (show $ repNum t) ++ (' ':(show $ date t)) ++ (' ':(show $ reps t))
 
 instance Read Task where
-    readsPrec _ str = [(Task name (read maxRep) (read rep) (read datetime) (read reps), afterReps)]
+    readsPrec _ str = [(Task name maxRep rep reps datetime, afterReps)]
       where
+        readFirst (a, b) = (read a, b)
+        tailSecond (a, b) = (a, tail b)
         readName [] = ([], [])
         readName [x] = ([x], [])
         readName (x:y:xs) = if y == '(' && x /= '\\' then ([], xs) else (x:result, rest)
           where (result, rest) = readName (y:xs)
-        readMax [] = ([], [])
-        readMax [x] = if x == ')' then ([], []) else ([x], [])
-        readMax (x:y:xs) = if x == ')' then ([],xs) else (x:result, rest)
-          where (result, rest) = readMax (y:xs)
-        readRep [] = ([], [])
-        readRep [x] = ([x], [])
-        readRep (x:y:xs) = if y == ' ' then ([x],xs) else (x:result,rest)
-          where (result, rest) = readRep (y:xs)
-        readDatetime [] = ([], [])
-        readDatetime [x] = ([x], [])
-        readDatetime (x:y:xs) = if y == ' ' then ([x], xs) else (x:result, rest)
-          where (result, rest) = readDatetime (y:xs)
-        readReps xs = (take 7 xs, drop 7 xs)
+        readMax :: String -> (Natural, String)
+        readMax = readFirst . tailSecond . span (/= ')')
+        readRep :: String -> (Natural, String)
+        readRep = readFirst . tailSecond . span (/= ' ')
+        readDatetime :: String -> (Datetime, String)
+        readDatetime = readFirst . tailSecond . span (/= ' ')
+        readReps :: String -> (Days, String)
+        readReps = readFirst . splitAt 7
         (name, afterName) = readName str
         (maxRep, afterMax) = readMax afterName
         (rep, afterRep) = readRep afterMax

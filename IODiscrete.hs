@@ -5,7 +5,7 @@ import Data.List (stripPrefix)
 
 import Numeric.Natural
 
-import System.Directory (doesDirectoryExist)
+import System.Directory (doesDirectoryExist, listDirectory)
 import System.IO
 import System.IO.Error
 
@@ -16,17 +16,24 @@ import Utils
 isGui :: Bool
 isGui = False
 
+expandDir :: FilePath -> IO [FilePath]
+expandDir fp = do
+    de <- doesDirectoryExist fp
+    if de
+    then do
+        conts <- listDirectory fp >>= mapM expandDir
+        return . map ((fp ++) . ('/':)) $ concat conts
+    else return [fp]
+
 getFiles :: IO [FilePath]
 getFiles = do
     filename <- prompt "Enter file or folder name: "
     if filename == ""
     then return []
-    else do
-        dirExists <- doesDirectoryExist filename
-        files <- getFiles
-        return $ (if dirExists
-                  then (filename ++ "/")
-                  else filename):files
+    else do 
+        rest <- getFiles
+        first <- expandDir filename
+        return $ first ++ rest
 
 getNewTask :: IO (FilePath, Task)
 getNewTask = do
