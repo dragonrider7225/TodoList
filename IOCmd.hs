@@ -30,7 +30,7 @@ getFiles = do
     filename <- prompt "Enter file or folder name: "
     if filename == ""
     then return []
-    else do 
+    else do
         rest <- getFiles
         first <- expandDir filename
         return $ first ++ rest

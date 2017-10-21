@@ -1,4 +1,4 @@
-module IOAll (readTaskFile, readTasks, writeTasks, convert0_0To0_1) where
+module IOAll (readTaskFile, readTasks, writeTasks) where
 
 import Control.Monad (filterM)
 
@@ -11,7 +11,8 @@ import GHC.Conc (pseq)
 
 import IODiscrete
 
-import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
+import System.Directory (
+    doesDirectoryExist, doesFileExist, listDirectory, removeFile, renameFile)
 import System.IO
 import System.IO.Error
 
@@ -19,31 +20,39 @@ import TodoData (Task(..), readTaskLines, showTaskLines, mkDate)
 
 import Utils
 
+data TFVer = V0_1 | Undefined
+
 -- |'addNewTask' @m@ retrieves a new task and inserts it into the map m.
 addNewTask :: Map FilePath [Task] -> IO (Map FilePath [Task])
 addNewTask tasks = do
     (fp, task) <- getNewTask
     return $ Map.insertWith ((:) . head) fp [task] tasks
 
+-- |'convert0_0To0_1' converts the original written version of the task files,
+-- which lacked a date field, to the next version.
 convert0_0To0_1 :: FilePath -> IO ()
 convert0_0To0_1 fp = do
-    h <- openFile fp ReadWriteMode
-    cont <- hGetContents h
-    dt <- getDatetime
+    cont <- readFile fp
+    dt <- getDate
     let ws = updateTasks dt cont
-    ws `pseq` writeFile fpSwap ws
+        chk = openFile (fp ++ "~") WriteMode >>= \h -> hPutStrLn h ws >> hClose h
+    cont `pseq` chk `pseq` removeFile fp
+    renameFile (fp ++ "~") fp
       where
-        fpSwap = '.':fp
-        getDatetime = do
+        getDate :: IO String
+        getDate = do
             (y, m, d) <- getCurrentTime >>= return . toGregorian . utctDay
             let yN = fromIntegral y
                 mN = fromIntegral m
                 dN = fromIntegral d
             return . show $ mkDate yN mN dN
+        updateTasks :: String -> String -> String
         updateTasks dt = unlines . ("v0.1":) . map insertDtLine . lines
           where
+            fitDatetime :: [String] -> [String]
             fitDatetime [] = []
             fitDatetime (x:xs) = x:dt:xs
+            insertDtLine :: String -> String
             insertDtLine = unwords . reverse . fitDatetime . reverse . words
 
 -- |'expandDirs' @fp@ gets all files with names that end in ".lst" and are
@@ -56,6 +65,15 @@ expandDirs dir = do
       else sequence . (map expandDirs dirs ++) . map return)
      [filter (endsWith ".lst") names]) >>= return . concat
 
+-- |'getTFVer' @fp@ gets and returns the version of the task file. If the
+-- given file contains no version information, then 'Undefined' is returned
+-- instead.
+getTFVer :: FilePath -> IO TFVer
+getTFVer fp = openFile fp ReadMode >>= hGetLine >>= return . lineToVer
+  where
+    lineToVer :: String -> TFVer
+    lineToVer str = if str == "v0.1" then V0_1 else Undefined
+
 -- |'isTaskFile' @fp@ is True iff fp is at least four characters long and its
 -- last four characters are ".lst".
 isTaskFile :: FilePath -> Bool
@@ -64,11 +82,22 @@ isTaskFile fp = endsWith fp ".lst"
 -- |'readTaskFile' @fp@ reads the file located by the path fp as list of tasks,
 -- with one task on each line.
 readTaskFile :: FilePath -> IO (FilePath, [Task])
-readTaskFile filename = do
-    fileExists <- doesFileExist filename
-    h <- openFile filename $ if fileExists then ReadMode else ReadWriteMode
-    cont <- hGetContents h
-    return (filename, readTaskLines cont)
+readTaskFile fp = do
+    fileExists <- doesFileExist fp
+    h <- openFile fp $ if fileExists then ReadMode else ReadWriteMode
+    cont <- hGetLine h
+    tl <- if cont == "v0.1"
+          then return . readTaskLines . hGetContents $ cont
+          else (hClose h) `pseq` (convert0_0To0_1 fp >> readTaskFile fp >>= return . snd)
+    return (fp, tl)
+      where
+        readLines :: String -> IO [Task]
+        readLines cont = if head (lines cont) == "v0.1"
+                         then return $ readTaskLines cont
+                         else do
+                            convert0_0To0_1 fp
+                            (_, tasks) <- readTaskFile fp
+                            return tasks
 
 -- |'readTasks' gets a list of files to read and reads them into a map from
 -- filename to lists of tasks.

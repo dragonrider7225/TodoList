@@ -2,7 +2,6 @@ module TodoData (Days(..), noDays, allDays, addSun, addMon, addTue, addWed,
                  addThu, addFri, addSat,
                  Datetime, mkDate, mkDatetime,
                  Task(..), readTaskLines, showTaskLines) where
-import qualified Data.Text as DT
 
 import Numeric.Natural
 
@@ -122,6 +121,7 @@ instance Read Task where
       where
         readFirst (a, b) = (read a, b)
         tailSecond (a, b) = (a, tail b)
+        readName :: String -> (String, String)
         readName [] = ([], [])
         readName [x] = ([x], [])
         readName (x:y:xs) = if y == '(' && x /= '\\' then ([], xs) else (x:result, rest)
@@ -147,4 +147,5 @@ showTaskLines tasks = foldl1 ((++) . (++"\n")) $ map show tasks
 readTaskLines :: String -> [Task]
 readTaskLines "" = []
 readTaskLines "\n" = []
-readTaskLines text = map (read . DT.unpack) . DT.splitOn (DT.pack "\n") . DT.pack $ text
+readTaskLines ('v':'0':'.':'1':'\n':rest) = map read . lines $ rest
+readTaskLines text = error "Can't read tasks from list file."
