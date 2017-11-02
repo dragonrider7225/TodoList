@@ -119,19 +119,23 @@ instance Show Task where
 instance Read Task where
     readsPrec _ str = [(Task name maxRep rep reps datetime, afterReps)]
       where
+        readFirst :: Read a => (String, b) -> (a, b)
         readFirst (a, b) = (read a, b)
+        tailSecond :: (a, [b]) -> (a, [b])
         tailSecond (a, b) = (a, tail b)
+        readAndTail :: (Read a, Integral n) => n -> (String, [b]) -> (a, [b])
+        readAndTail n = readFirst . repFunc n tailSecond
         readName :: String -> (String, String)
         readName [] = ([], [])
         readName [x] = ([x], [])
         readName (x:y:xs) = if y == '(' && x /= '\\' then ([], xs) else (x:result, rest)
           where (result, rest) = readName (y:xs)
         readMax :: String -> (Natural, String)
-        readMax = readFirst . tailSecond . span (/= ')')
+        readMax = readAndTail 2 . span (/= ')')
         readRep :: String -> (Natural, String)
-        readRep = readFirst . tailSecond . span (/= ' ')
+        readRep = readAndTail 1 . span (/= ' ')
         readDatetime :: String -> (Datetime, String)
-        readDatetime = readFirst . tailSecond . span (/= ' ')
+        readDatetime = readAndTail 1 . span (/= ' ')
         readReps :: String -> (Days, String)
         readReps = readFirst . splitAt 7
         (name, afterName) = readName str

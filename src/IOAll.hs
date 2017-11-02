@@ -32,11 +32,9 @@ addNewTask tasks = do
 -- which lacked a date field, to the next version.
 convert0_0To0_1 :: FilePath -> IO ()
 convert0_0To0_1 fp = do
-    cont <- readFile fp
     dt <- getDate
-    let ws = updateTasks dt cont
-        chk = openFile (fp ++ "~") WriteMode >>= \h -> hPutStrLn h ws >> hClose h
-    cont `pseq` chk `pseq` removeFile fp
+    cont <- readFile fp
+    writeFile (fp ++ "~") $ updateTasks dt cont
     renameFile (fp ++ "~") fp
       where
         getDate :: IO String
@@ -84,20 +82,12 @@ isTaskFile fp = endsWith fp ".lst"
 readTaskFile :: FilePath -> IO (FilePath, [Task])
 readTaskFile fp = do
     fileExists <- doesFileExist fp
-    h <- openFile fp $ if fileExists then ReadMode else ReadWriteMode
-    cont <- hGetLine h
+    if fileExists then return () else writeFile fp "\n"
+    cont <- withFile fp ReadMode hGetLine
     tl <- if cont == "v0.1"
-          then return . readTaskLines . hGetContents $ cont
-          else (hClose h) `pseq` (convert0_0To0_1 fp >> readTaskFile fp >>= return . snd)
+          then readFile fp >>= return . readTaskLines
+          else convert0_0To0_1 fp >> readTaskFile fp >>= return . snd
     return (fp, tl)
-      where
-        readLines :: String -> IO [Task]
-        readLines cont = if head (lines cont) == "v0.1"
-                         then return $ readTaskLines cont
-                         else do
-                            convert0_0To0_1 fp
-                            (_, tasks) <- readTaskFile fp
-                            return tasks
 
 -- |'readTasks' gets a list of files to read and reads them into a map from
 -- filename to lists of tasks.
