@@ -16,10 +16,10 @@ fi
 
 if [ "$1" = "gui" ]
     then
-    cp IOGUI.hs IODiscrete.hs
+    cp src/IOGUI.hs src/IODiscrete.hs
 elif [ "$1" = "cmd" ]
     then
-    cp IOCmd.hs IODiscrete.hs
+    cp src/IOCmd.hs src/IODiscrete.hs
 else
     eval "$0 $HELP_FLAG"
     exit 2

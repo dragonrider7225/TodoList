@@ -1,4 +1,4 @@
-module IOAll (readTaskFile, readTasks, writeTasks) where
+module IOAll (addNewTask, readTaskFile, readTasks, writeTasks) where
 
 import Control.Monad (filterM)
 

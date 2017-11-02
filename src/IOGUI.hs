@@ -1,7 +1,10 @@
-module IODiscrete (getFiles, getNewTask, isGui) where
+module IODiscrete (displayTasks, getFiles, getNewTask, initIO, isGui) where
 
+import Data.ByteString.Char8 (pack)
 import Data.Char (toLower)
 import Data.List (stripPrefix)
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
@@ -16,24 +19,33 @@ import TodoData (Days(..), Task(..), noDays)
 
 import Utils
 
+displayTasks :: Map FilePath [Task] -> UI ()
+displayTasks tasks = do
+    w <- askWindow
+    return ()
+
+initIO :: IO ()
+initIO = startGUI defaultConfig { jsPort = Just 8023
+                                , jsStatic = Just "assets"
+                                , jsAddr = Just $ pack "0.0.0.0"
+                                } setup
+
 isGui :: Bool
 isGui = True
 
 setup :: Window -> UI ()
-setup window = do
-    return window # set UI.title "Todo List"
-    button <- set UI.text "Add task" UI.button
-    getBody window #+ [element button, set (UI.attr "id") "tasks" UI.div, element button]
-    on UI.click button $ \_ -> getNewTask >>= (\(f, t) -> insertTask f t)
+setup w = do
+    return w # set UI.title "Todo List"
+    taskButton <- set UI.text "Add task" UI.button
+    fileButton <- set UI.text "Add task file" UI.button
+    getBody w #+ [element taskButton, set (UI.attr "id") "tasks" UI.div, element taskButton]
+    on UI.click taskButton $ \_ -> liftIO getNewTask >>= (\(f, t) -> insertTask f t)
 
 insertTask :: FilePath -> Task -> UI ()
-insertTask f t = do
+insertTask fp t = do
     w <- askWindow
-    tasksEl <- getElementById w 
     Just tasks <- getElementById w "tasks"
-    liftIO $ print tasks
-      where
-        dateStr (t {})
+    return ()
 
 getFiles :: IO [FilePath]
 getFiles = putStr "TODO: Implement getFiles in GUI mode" >> return [] {-do

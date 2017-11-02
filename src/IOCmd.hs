@@ -1,4 +1,4 @@
-module IODiscrete (getFiles, getNewTask, isGui) where
+module IODiscrete (displayTasks, getFiles, getNewTask, initIO, isGui) where
 
 import Data.Char (toLower)
 import Data.List (stripPrefix)
@@ -12,6 +12,9 @@ import System.IO.Error
 import TodoData (Days(..), Datetime, Task(..), mkDate, mkDatetime, noDays)
 
 import Utils
+
+initIO :: IO ()
+initIO = return ()
 
 isGui :: Bool
 isGui = False

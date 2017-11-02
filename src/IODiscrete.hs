@@ -1,42 +1,67 @@
-module IODiscrete (getFiles, getNewTask, isGui) where
+module IODiscrete (displayTasks, getFiles, getNewTask, initIO, isGui) where
 
+import Data.ByteString.Char8 (pack)
 import Data.Char (toLower)
 import Data.List (stripPrefix)
+import Data.Map (Map)
+import qualified Data.Map as Map
+
+import qualified Graphics.UI.Threepenny as UI
+import Graphics.UI.Threepenny.Core
 
 import Numeric.Natural
 
-import System.Directory (doesDirectoryExist, listDirectory)
+import System.Directory (doesDirectoryExist)
 import System.IO
 import System.IO.Error
 
-import TodoData (Days(..), Datetime, Task(..), mkDate, mkDatetime, noDays)
+import TodoData (Days(..), Task(..), noDays)
 
 import Utils
 
-isGui :: Bool
-isGui = False
+displayTasks :: Map FilePath [Task] -> UI ()
+displayTasks tasks = do
+    w <- askWindow
+    return ()
 
-expandDir :: FilePath -> IO [FilePath]
-expandDir fp = do
-    de <- doesDirectoryExist fp
-    if de
-    then do
-        conts <- listDirectory fp >>= mapM expandDir
-        return . map ((fp ++) . ('/':)) $ concat conts
-    else return [fp]
+initIO :: IO ()
+initIO = startGUI defaultConfig { jsPort = Just 8023
+                                , jsStatic = Just "assets"
+                                , jsAddr = Just $ pack "0.0.0.0"
+                                } setup
+
+isGui :: Bool
+isGui = True
+
+setup :: Window -> UI ()
+setup w = do
+    return w # set UI.title "Todo List"
+    taskButton <- set UI.text "Add task" UI.button
+    fileButton <- set UI.text "Add task file" UI.button
+    getBody w #+ [element taskButton, set (UI.attr "id") "tasks" UI.div, element taskButton]
+    on UI.click taskButton $ \_ -> liftIO getNewTask >>= (\(f, t) -> insertTask f t)
+
+insertTask :: FilePath -> Task -> UI ()
+insertTask fp t = do
+    w <- askWindow
+    Just tasks <- getElementById w "tasks"
+    return ()
 
 getFiles :: IO [FilePath]
-getFiles = do
-    filename <- prompt "Enter file or folder name: "
+getFiles = putStr "TODO: Implement getFiles in GUI mode" >> return [] {-do
+    putStr "Enter file or folder name: "
+    filename <- getLine
     if filename == ""
     then return []
-    else do 
-        rest <- getFiles
-        first <- expandDir filename
-        return $ first ++ rest
+    else do
+        dirExists <- doesDirectoryExist filename
+        files <- getFiles
+        return $ (if dirExists
+                  then (filename ++ "/")
+                  else filename):files -}
 
 getNewTask :: IO (FilePath, Task)
-getNewTask = do
+getNewTask = putStr "TODO: Implement getNewTask for GUI mode" >> return undefined {-do
     name <- prompt "Enter task name: "
     maxRep <- promptNatural "Enter number of repeats (0 to repeat forever): "
     repNum <- (if maxRep > 0
@@ -46,14 +71,12 @@ getNewTask = do
              then (prompt "Enter days to repeat (sun mon tue wed thu fri sat): "
                     >>= return . readRepDays)
              else return noDays)
-    fp <- defaultTo (prompt "Enter file to save task to (default \"tasks.lst\"): ") "tasks.lst"
-    dt <- (do
-        dateStr <- prompt "Enter date (yyyymmdd): "
-        timeStr <- defaultTo (prompt "Enter time (hhmm, default 0000): ") "0000"
-        return $ read (dateStr ++ timeStr))
-    return $ (fp, Task name maxRep repNum reps dt)
+    fp <- (prompt "Enter file to save task to (default \"tasks.lst\"): " >>=
+            (\fp -> return $ if fp == "" then "tasks.lst" else fp))
+    return $ (fp, Task name maxRep repNum reps)
       where
-        defaultTo f s = f >>= (\v -> return $ if v == "" then s else v)
+        prompt :: String -> IO String
+        prompt p = putStr p >> getLine
         days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
         readRepDays s = let [su, mo, tu, we, th, fr, sa] = checkConts days . map toLower $ s
                         in Days su mo tu we th fr sa
@@ -65,4 +88,4 @@ getNewTask = do
                 in case sfx of
                     Nothing -> False:(checkConts rest str)
                     Just tl -> True:(checkConts rest $ drop 1 tl)
-        promptNatural p = prompt p >>= return . read :: IO Natural
+        promptNatural p = prompt p >>= return . read :: IO Natural -}
