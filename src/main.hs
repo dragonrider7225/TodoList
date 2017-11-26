@@ -8,6 +8,7 @@ import IODiscrete
 
 import System.IO
 
+-- |The entry point for the program.
 main :: IO ()
 main = do
     initIO
@@ -16,8 +17,8 @@ main = do
     then optExit >>= (\b -> if b then return () else main)
     else print tasks >> main
 
+-- |'optExit' provides a quit prompt to the command line.
 optExit :: IO Bool
 optExit = do
-    putStr "[q]uit? "
-    response <- getLine
+    response <- prompt "[q]uit? "
     return $ if response == "q" then True else False

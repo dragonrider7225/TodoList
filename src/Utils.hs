@@ -7,6 +7,7 @@ module Utils (
 import ListUtils
 import IOUtils
 
+-- |'repFunc' @n f@ builds a function that applies @f@ @n@ times.
 repFunc :: Integral a => a -> (b -> b) -> (b -> b)
 repFunc 0 _ = id
-repFunc x f = f . repFunc (x - 1) f
+repFunc n f = f . repFunc (n - 1) f

@@ -2,6 +2,8 @@ module IODiscrete (displayTasks, getFiles, getNewTask, initIO, isGui) where
 
 import Data.Char (toLower)
 import Data.List (stripPrefix)
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 import Numeric.Natural
 
@@ -13,12 +15,22 @@ import TodoData (Days(..), Datetime, Task(..), mkDate, mkDatetime, noDays)
 
 import Utils
 
+-- |'displayTasks' @tasks@ displays the passed tasks in the appropriate format.
+-- TODO: implement
+displayTasks :: Map FilePath [Task] -> IO ()
+displayTasks = const $ return ()
+
+-- |'initIO' is unnecessary for command line, since I/O is provided by the
+-- system.
 initIO :: IO ()
 initIO = return ()
 
+-- |'isGui' describes whether the configuration provides GUI capability.
 isGui :: Bool
 isGui = False
 
+-- |'expandDir' converts a single file path to a list of all non-directory
+-- descendents.
 expandDir :: FilePath -> IO [FilePath]
 expandDir fp = do
     de <- doesDirectoryExist fp
@@ -28,6 +40,7 @@ expandDir fp = do
         return . map ((fp ++) . ('/':)) $ concat conts
     else return [fp]
 
+-- |'getFiles' provides a list of files to read as task files.
 getFiles :: IO [FilePath]
 getFiles = do
     filename <- prompt "Enter file or folder name: "
@@ -38,6 +51,7 @@ getFiles = do
         first <- expandDir filename
         return $ first ++ rest
 
+-- |'getNewTask' provides a new task to be added.
 getNewTask :: IO (FilePath, Task)
 getNewTask = do
     name <- prompt "Enter task name: "

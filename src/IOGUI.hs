@@ -19,20 +19,24 @@ import TodoData (Days(..), Task(..), noDays)
 
 import Utils
 
+-- |'displayTasks' @tasks@ displays the passed tasks in the appropriate format.
 displayTasks :: Map FilePath [Task] -> UI ()
 displayTasks tasks = do
     w <- askWindow
     return ()
 
+-- |'initIO' initializes the I/O system.
 initIO :: IO ()
 initIO = startGUI defaultConfig { jsPort = Just 8023
                                 , jsStatic = Just "assets"
                                 , jsAddr = Just $ pack "0.0.0.0"
                                 } setup
 
+-- |'isGui' describes whether the configuration provides GUI capability.
 isGui :: Bool
 isGui = True
 
+-- |'setup' builds the HTML tree.
 setup :: Window -> UI ()
 setup w = do
     return w # set UI.title "Todo List"
@@ -41,14 +45,20 @@ setup w = do
     getBody w #+ [element taskButton, set (UI.attr "id") "tasks" UI.div, element taskButton]
     on UI.click taskButton $ \_ -> liftIO getNewTask >>= (\(f, t) -> insertTask f t)
 
+-- |'insertTask' @fp t@ inserts the given task into the task list, associated
+-- with the given task file.
+-- TODO: implement
 insertTask :: FilePath -> Task -> UI ()
 insertTask fp t = do
     w <- askWindow
     Just tasks <- getElementById w "tasks"
     return ()
 
-getFiles :: IO [FilePath]
-getFiles = putStr "TODO: Implement getFiles in GUI mode" >> return [] {-do
+-- |'getFiles' provides a list of files to read as task files.
+-- TODO: implement
+getFiles :: UI [FilePath]
+getFiles = liftIO (putStr "TODO: Implement getFiles in GUI mode") >> return []
+{-do
     putStr "Enter file or folder name: "
     filename <- getLine
     if filename == ""
@@ -60,8 +70,13 @@ getFiles = putStr "TODO: Implement getFiles in GUI mode" >> return [] {-do
                   then (filename ++ "/")
                   else filename):files -}
 
-getNewTask :: IO (FilePath, Task)
-getNewTask = putStr "TODO: Implement getNewTask for GUI mode" >> return undefined {-do
+-- |'getNewTask' provides a new task to be added.
+-- TODO: implement
+getNewTask :: UI (FilePath, Task)
+getNewTask = do
+    putStr "TODO: Implement getNewTask for GUI mode"
+    return undefined
+{-do
     name <- prompt "Enter task name: "
     maxRep <- promptNatural "Enter number of repeats (0 to repeat forever): "
     repNum <- (if maxRep > 0

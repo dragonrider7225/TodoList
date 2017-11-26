@@ -20,6 +20,7 @@ import TodoData (Task(..), readTaskLines, showTaskLines, mkDate)
 
 import Utils
 
+-- |A value of type 'TFVer' describes the version of a task file.
 data TFVer = V0_1 | Undefined
 
 -- |'addNewTask' @m@ retrieves a new task and inserts it into the map m.

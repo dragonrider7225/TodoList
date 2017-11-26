@@ -13,6 +13,7 @@ default(Natural)
 t = Task "Test Task" 120 1 $ Days True True True True True False False
 ---}
 
+-- |A 'Days' object describes the weekly repetition of a task.
 data Days = Days { sun :: Bool
                  , mon :: Bool
                  , tue :: Bool
@@ -22,30 +23,39 @@ data Days = Days { sun :: Bool
                  , sat :: Bool
                  } deriving (Eq)
 
+-- |'noDays' describes a non-repeating task.
 noDays :: Days
 noDays = Days False False False False False False False
 
+-- |'allDays' describes a task that repeats every day.
 allDays :: Days
 allDays = Days True True True True True True True
 
+-- |'addSun' sets the repetition on Sunday.
 addSun :: Days -> Days
 addSun days = Days True (mon days) (tue days) (wed days) (thu days) (fri days) (sat days)
 
+-- |'addMon' sets the repetition on Monday.
 addMon :: Days -> Days
 addMon days = Days (sun days) True (tue days) (wed days) (thu days) (fri days) (sat days)
 
+-- |'addTue' sets the repetition on Tuesday.
 addTue :: Days -> Days
 addTue days = Days (sun days) (mon days) True (wed days) (thu days) (fri days) (sat days)
 
+-- |'addWed' sets the repetition on Wednesday.
 addWed :: Days -> Days
 addWed days = Days (sun days) (mon days) (tue days) True (thu days) (fri days) (sat days)
 
+-- |'addThu' sets the repetition on Thursday.
 addThu :: Days -> Days
 addThu days = Days (sun days) (mon days) (tue days) (wed days) True (fri days) (sat days)
 
+-- |'addFri' sets the repetition on Friday.
 addFri :: Days -> Days
 addFri days = Days (sun days) (mon days) (tue days) (wed days) (thu days) True (sat days)
 
+-- |'addSat' sets the repetition on Saturday.
 addSat :: Days -> Days
 addSat days = Days (sun days) (mon days) (tue days) (wed days) (thu days) (fri days) True
 
@@ -59,6 +69,7 @@ instance Read Days where
         result = Days su mo tu we th fr sa
         rest = drop 7 str
 
+-- |A 'Datetime' object describes the datetime at which a task occurs.
 data Datetime = Datetime { year :: Natural
                          , month :: Natural
                          , day :: Natural
@@ -66,6 +77,8 @@ data Datetime = Datetime { year :: Natural
                          , minute :: Natural
                          } deriving (Eq)
 
+-- |'mkDatetime' normalizes the values passed to it and converts them into a
+-- 'Datetime' object.
 mkDatetime :: Natural -> Natural -> Natural -> Natural -> Natural -> Datetime
 mkDatetime yr mnt dy hr min = if min >= 60
                               then fixMin
@@ -86,6 +99,8 @@ mkDatetime yr mnt dy hr min = if min >= 60
     fixMnt = mkDatetime (yr + 1) (mnt - 12) dy hr min
     genDatetime = Datetime yr mnt dy hr min
 
+-- |'mkDate' @yr mnt day@ provides an equal 'Datetime' object to
+-- 'mkDatetime' @yr mnt day 0 0@.
 mkDate :: Natural -> Natural -> Natural -> Datetime
 mkDate = curry . curry $ (flip . (flip . uncurry . uncurry) mkDatetime) 0 0
 
@@ -106,6 +121,7 @@ instance Read Datetime where
         (mnt, yr) = fixFst $ splitAt 2 afterDay
         result = mkDatetime (read $ reverse yr) mnt day hr min
 
+-- |A 'Task' object describes an (optionally repeating) item on the todo list.
 data Task = Task { name :: String
                  , maxRep :: Natural
                  , repNum :: Natural
@@ -144,10 +160,13 @@ instance Read Task where
         (datetime, afterDatetime) = readDatetime afterRep
         (reps, afterReps) = readReps afterDatetime
 
+-- |'showTaskLines' converts a list of tasks to the string representation that
+-- will be written to the task file.
 showTaskLines :: [Task] -> String
 showTaskLines [] = "\n"
 showTaskLines tasks = foldl1 ((++) . (++"\n")) $ map show tasks
 
+-- |'readTaskLines' converts a task file string into a list of tasks.
 readTaskLines :: String -> [Task]
 readTaskLines "" = []
 readTaskLines "\n" = []
